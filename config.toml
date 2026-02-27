@@ -1,0 +1,21 @@
+[theme]
+# The primary accent color for buttons, sliders, and interactive elements
+primaryColor = "#00d4ff" 
+
+# The main background color for the dashboard
+backgroundColor = "#0e1117"
+
+# The color for the sidebar and card backgrounds
+secondaryBackgroundColor = "#161b22"
+
+# The color of the main text
+textColor = "#ffffff"
+
+# The font family (sans serif looks more modern for business tools)
+font = "sans serif"
+
+[server]
+# This helps when deploying to GitHub/Streamlit Cloud
+headless = true
+enableCORS = false
+enableXsrfProtection = false
