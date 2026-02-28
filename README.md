@@ -27,7 +27,25 @@ This repository contains the **Sales & Demand Forecasting Dashboard** developed 
 - **Statistical Modeling**: Statsmodels (ARIMA)
 - **Visualizations**: Plotly
 
-## ⚙️ Installation & Usage
-1. **Clone the repository**:
-   ```bash
-   git clone [https://github.com/MITAANSH001/FUTURE_ML_01](https://github.com/MITAANSH001/FUTURE_ML_01)
+**Installation**
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/yourusername/sales-forecasting-ml.git
+cd sales-forecasting-ml
+```
+
+2. **Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+3. **Run the dashboard**
+```bash
+streamlit run app.py
+```
+
+4. **Open your browser**
+```
+http://localhost:8501
+```
