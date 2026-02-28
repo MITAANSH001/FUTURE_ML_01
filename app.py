@@ -1,78 +1,56 @@
 import streamlit as st
-import pandas as pd
 import os
+import pandas as pd
 from src.data_processor import DataProcessor
 from src.model import SalesForecaster
 from src.utils import Visualizer
 
-# 1. Page Configuration
-st.set_page_config(page_title="Sales & Demand Forecasting Dashboard", layout="wide")
+st.set_page_config(page_title="Sales Forecasting Dashboard", layout="wide")
 
-# 2. Sidebar Controls
-st.sidebar.title("🛠️ Configuration")
-forecast_steps = st.sidebar.slider("Forecast Period (Months)", 1, 24, 12)
-st.sidebar.divider()
-st.sidebar.info("This AI-powered forecasting tool uses ARIMA and Linear Regression to predict future sales trends.")
+# 1. Sidebar for User Interaction
+st.sidebar.header("🛠️ Dashboard Settings")
+DATA_PATH = "data/sample_sales.csv"
 
-# 3. Header
-st.title("📊 Sales & Demand Forecasting Dashboard")
-
-# Define path and check file
-DATA_PATH = "data/train.csv"
+# Slider to let user choose how many days to forecast
+forecast_days = st.sidebar.slider("Select Forecast Horizon (Days)", 7, 30, 14)
 
 if os.path.exists(DATA_PATH):
-    # Initialize Components
     processor = DataProcessor(DATA_PATH)
     forecaster = SalesForecaster()
     visualizer = Visualizer()
-    
-    # Load and process data
+
     df = processor.load_data()
     ts_data = processor.get_time_series_data()
-    
-    # --- TOP SECTION: Data Status & Metrics ---
-    with st.expander("🔍 Data Status", expanded=False):
-        st.success(f"Automatically loaded: {DATA_PATH}")
-        st.dataframe(df.head(), use_container_width=True)
 
-    # Calculate Metrics for the top row
-    arima_metrics = forecaster.train_arima(ts_data)
-    
-    # Creating the 'Metric Cards' row like in your goal image
-    m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-    m_col1.metric("MAPE (Accuracy)", f"{arima_metrics['mape']}%", delta="-2.1%")
-    m_col2.metric("MAE (Avg Error)", f"${arima_metrics['mae']:,.0f}")
-    m_col3.metric("RMSE", f"{arima_metrics['rmse']:,.0f}")
-    m_col4.metric("Confidence Score", "94.2%")
+    st.title("📊 Sales & Demand Forecasting Dashboard")
+    st.markdown(f"**Current Dataset:** {DATA_PATH} ({len(ts_data)} days of history)")
 
+    # 2. Dynamic Model Training
+    metrics = forecaster.train_arima(ts_data)
+    
+    # Professional Metric Cards
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Model Accuracy (MAPE)", f"{metrics['mape']:.2f}%", help="Lower is better")
+    c2.metric("RMSE Error", f"{metrics['rmse']:.2f}")
+    c3.metric("Model Status", metrics['status'])
+
+    # 3. Interactive Plotting
+    st.subheader(f"📈 {forecast_days}-Day AI Demand Forecast")
+    future = forecaster.predict_future(ts_data, steps=forecast_days)
+    fig = visualizer.plot_future_forecast(ts_data, future)
+    st.plotly_chart(fig, use_container_width=True)
+
+    # 4. Data Export Feature
     st.divider()
-
-    # --- MAIN SECTION: Tabs for different views ---
-    # This creates the "Feature Engineering", "Forecasting", etc. navigation
-    tab1, tab2, tab3 = st.tabs(["📈 Sales Trends", "🎯 Model Evaluation", "🚀 Future Forecast"])
-
-    with tab1:
-        st.subheader("Historical Sales Trend Analysis")
-        fig_trend = visualizer.plot_sales_trend(ts_data)
-        st.plotly_chart(fig_trend, use_container_width=True)
-
-    with tab2:
-        st.subheader("Forecast vs Actual (Model Validation)")
-        fig_comp = visualizer.plot_forecast_vs_actual(arima_metrics['actuals'], arima_metrics['predictions'])
-        st.plotly_chart(fig_comp, use_container_width=True)
-        
-        # Detailed report text section
-        st.info("**Decision Support:** These insights are derived directly from the forecasting models to support strategic planning.")
-
-    with tab3:
-        st.subheader(f"Projected {forecast_steps}-Month Sales Forecast")
-        future_forecast = forecaster.predict_future(ts_data, steps=forecast_steps)
-        fig_future = visualizer.plot_future_forecast(ts_data, future_forecast)
-        st.plotly_chart(fig_future, use_container_width=True)
-        
-        if st.button("📥 Generate Business Summary Report"):
-            report_path = visualizer.generate_business_summary(future_forecast, arima_metrics)
-            st.toast("Report generated in outputs/ folder!", icon="✅")
-
+    st.subheader("📥 Export Forecast Results")
+    forecast_df = pd.DataFrame({'Date': future.index, 'Predicted_Sales': future.values})
+    
+    csv = forecast_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="Download Forecast as CSV",
+        data=csv,
+        file_name='future_sales_forecast.csv',
+        mime='text/csv',
+    )
 else:
-    st.error(f"Dataset not found at {DATA_PATH}. Please check your folder structure.")
+    st.error(f"File not found at {DATA_PATH}.")
